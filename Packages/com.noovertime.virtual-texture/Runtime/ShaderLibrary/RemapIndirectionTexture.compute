@@ -1,0 +1,32 @@
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+
+#pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
+
+#pragma kernel CopyImage
+#pragma kernel ClearImage
+
+RW_TEXTURE2D(uint1, _indirectionTexture0);
+RW_TEXTURE2D(uint1, _indirectionTexture1);
+StructuredBuffer<uint> _params;
+
+[numthreads(4,4,1)]
+void CopyImage(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+    const uint size = _params[0];
+    const uint2 oldImagePos = uint2(_params[2], _params[3]);
+    const uint2 newImagePos = uint2(_params[4], _params[5]);
+    if (dispatchThreadId.x >= size || dispatchThreadId.y >= size) return;
+    const uint2 fromImagePos = dispatchThreadId.xy + oldImagePos;
+    const uint2 toImagePos = dispatchThreadId.xy + newImagePos;
+    _indirectionTexture1[toImagePos] = _indirectionTexture0[fromImagePos];
+    _indirectionTexture0[fromImagePos] = 65535u;
+}
+
+[numthreads(4,4,1)]
+void ClearImage(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+    const uint size = _params[0];
+    if (dispatchThreadId.x >= size || dispatchThreadId.y >= size) return;
+    const uint2 clearPos = dispatchThreadId.xy + uint2(_params[2], _params[3]);
+    _indirectionTexture0[clearPos] = 65535u;
+}

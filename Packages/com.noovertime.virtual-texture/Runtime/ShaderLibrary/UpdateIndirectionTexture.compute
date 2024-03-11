@@ -1,0 +1,62 @@
+﻿#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+
+#pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
+
+#pragma kernel UpdateMip0
+#pragma kernel UpdateMips
+
+RW_TEXTURE2D(uint1, _indirectionTexture0);
+RW_TEXTURE2D(uint1, _indirectionTexture1);
+RW_TEXTURE2D(uint1, _indirectionTexture2);
+RW_TEXTURE2D(uint1, _indirectionTexture3);
+RW_TEXTURE2D(uint1, _indirectionTexture4);
+RW_TEXTURE2D(uint1, _indirectionTexture5);
+RW_TEXTURE2D(uint1, _indirectionTexture6);
+RW_TEXTURE2D(uint1, _indirectionTexture7);
+RW_TEXTURE2D(uint1, _indirectionTexture8);
+StructuredBuffer<uint4> _write2IndirectionBuffer;
+uint _write2IndirectionCount;
+
+[numthreads(8,1,1)]
+void UpdateMips(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+    if (dispatchThreadId.x >= _write2IndirectionCount) return;
+    uint4 pageID2Slot = _write2IndirectionBuffer[dispatchThreadId.x];
+    switch (pageID2Slot.z)
+    {
+    case 1:
+        _indirectionTexture1[pageID2Slot.xy] = pageID2Slot.w;
+        break;
+    case 2:
+        _indirectionTexture2[pageID2Slot.xy] = pageID2Slot.w;
+        break;
+    case 3:
+        _indirectionTexture3[pageID2Slot.xy] = pageID2Slot.w;
+        break;
+    case 4:
+        _indirectionTexture4[pageID2Slot.xy] = pageID2Slot.w;
+        break;
+    case 5:
+        _indirectionTexture5[pageID2Slot.xy] = pageID2Slot.w;
+        break;
+    case 6:
+        _indirectionTexture6[pageID2Slot.xy] = pageID2Slot.w;
+        break;
+    case 7:
+        _indirectionTexture7[pageID2Slot.xy] = pageID2Slot.w;
+        break;
+    case 8:
+        _indirectionTexture8[pageID2Slot.xy] = pageID2Slot.w;
+        break;
+    default:
+        break;
+    }
+}
+
+[numthreads(8,1,1)]
+void UpdateMip0(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+    if (dispatchThreadId.x >= _write2IndirectionCount) return;
+    uint4 pageID2Slot = _write2IndirectionBuffer[dispatchThreadId.x];
+    _indirectionTexture0[pageID2Slot.xy] = pageID2Slot.w;
+}

@@ -1,0 +1,26 @@
+{
+    "name": "NoOvertime.VirtualTexture.Runtime",
+    "rootNamespace": "NoOvertime.VirtualTexture",
+    "references": [
+        "Unity.Mathematics",
+        "Unity.RenderPipelines.HighDefinition.Runtime",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.Collections",
+        "Unity.Burst"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "Unity",
+            "expression": "2023.2.10",
+            "define": "DEBUG_TERRAIN"
+        }
+    ],
+    "noEngineReferences": false
+}

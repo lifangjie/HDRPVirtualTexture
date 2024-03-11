@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e54515e530f54d5cab71c68888c2f704, type: 3}
+  m_Name: VTResource
+  m_EditorClassIdentifier: 
+  clearPageIDOutputTextureCompute: {fileID: 7200000, guid: a98aad4621b54bf2a744b5226a129baf, type: 3}
+  clearSector2VirtualImageInfoTextureCompute: {fileID: 7200000, guid: c71a3a8371c248aca1619212e1fd0f19, type: 3}
+  updateSector2VirtualImageInfoTextureCompute: {fileID: 7200000, guid: c10d267aa69e4c2b974caf79e263b8c7, type: 3}
+  updateIndirectionTextureCompute: {fileID: 7200000, guid: c55b2f78e7a84689848a859184172c84, type: 3}
+  remapIndirectionTextureCompute: {fileID: 7200000, guid: cd865cc17c8041f0bb4abd9d9ce642c5, type: 3}
+  renderingPhysicalPageCompute: {fileID: 7200000, guid: 52a2f6a61ae140309da089d098c22c40, type: 3}
+  frameDebuggerMaterial: {fileID: 2100000, guid: 5bdb9661bee24ce48896b27d59ca98c6, type: 2}

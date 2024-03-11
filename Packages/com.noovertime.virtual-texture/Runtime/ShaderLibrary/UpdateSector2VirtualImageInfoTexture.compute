@@ -1,0 +1,18 @@
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+#include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
+
+#pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
+
+#pragma kernel KMain
+
+RW_TEXTURE2D(uint1, _sector2VirtualImageInfoTexture);
+StructuredBuffer<uint3> _write2AtlasBuffer;
+uint _write2AtlasCount;
+
+[numthreads(16,1,1)]
+void KMain(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+    if (dispatchThreadId.x >= _write2AtlasCount) return;
+    uint3 sector2Atlas = _write2AtlasBuffer[dispatchThreadId.x];
+    _sector2VirtualImageInfoTexture[sector2Atlas.xy] = sector2Atlas.z;
+}

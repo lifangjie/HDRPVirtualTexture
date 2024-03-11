@@ -1,0 +1,14 @@
+{
+  "name": "com.noovertime.virtual-texture",
+  "description": "Virtual Texture.",
+  "version": "1.0.0",
+  "unity": "2019.3",
+  "displayName": "Virtual Texture",
+  "dependencies": {},
+  "hideInEditor": false,
+  "author": {
+    "name": "NoOvertime",
+    "url": "http://noovertime.com"
+  },
+  "type": "library"
+}

@@ -1,0 +1,85 @@
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+#include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
+#include "Assets/Shaders/TerrainMaterialIDUtility.hlsl"
+
+#pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
+
+#pragma kernel KMain
+
+#define BORDER_SIZE 4
+#define SECTOR_SIZE 64.0f
+#define PAGE_SIZE 256.0f
+#define PAGE_SIZE_WITH_BORDER 264.0f
+
+uint _targetIndex;
+StructuredBuffer<uint> _params; // sector x/y, localPageID x/y, mip, sizeLog
+RWTexture2DArray<float4> _physicalPageBaseMapAtlas;
+RWTexture2DArray<float4> _physicalPageMaskMapAtlas;
+
+Texture2D<unorm float> _SplatMap;
+TEXTURE2D_ARRAY(_BaseMapArray); // share sampler with mask map array
+TEXTURE2D_ARRAY(_MaskMapArray);
+SAMPLER(sampler_linear_repeat_aniso8);
+
+void SampleMaterialID(TEXTURE2D_ARRAY(_BaseMapArray), TEXTURE2D_ARRAY(_MaskMapArray), SAMPLER(sampler_common), float2 uv, float4 slot, float mip, float4 weight, out float4 baseMap, out float4 maskMap);
+void SampleMaterialIDTextureArrayLOD(TEXTURE2D_ARRAY(_BaseMapArray), TEXTURE2D_ARRAY(_MaskMapArray), SAMPLER(sampler_common), float2 uv, float slot, float mip, out float4 baseMap, out float4 maskMap);
+
+[numthreads(4,4,1)]
+void KMain(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+    /*
+     * scale = (virtual texture size / physical texture size) >> mip
+     * bias = physical page offset – virtual page offset * scale
+     * physical uv = virtual uv * scale + bias
+     */
+    const uint mip = _params[4];
+    const uint virtualPageSizeLog = _params[5];
+    const uint2 sector = uint2(_params[0], _params[1]);
+    const uint2 localPageID = uint2(_params[2], _params[3]); // sector中的第几个page
+    const uint2 sectorPosition = sector * 64u;
+    // sizeLog 65536对64米, 256per page, mip0且_params[5]==8的情况
+    // TODO: mip 可能需要小于 sizeLog
+    const float2 indirectionSize = (1 << (virtualPageSizeLog - mip) ) / SECTOR_SIZE; // sector一共有这么多个page(每米)
+    const float2 pagePosition = (localPageID >> mip) / indirectionSize; // 当前page相对于sector的位置
+    const float2 pixelPosition = ((float2)dispatchThreadId.xy - BORDER_SIZE) / PAGE_SIZE / indirectionSize; // 当前pixel相对于page的位置
+    const float2 positionWS = sectorPosition + pagePosition + pixelPosition;
+
+    float4 slot;
+    float2 vertexPosX, vertexPosY, vertexPosZ, vertexPosW;
+    float4 weight = RectGrid(positionWS, vertexPosX, vertexPosY, vertexPosZ, vertexPosW);
+    slot.x = LOAD_TEXTURE2D_LOD(_SplatMap, vertexPosX, 0).r * 255.5;
+    slot.y = LOAD_TEXTURE2D_LOD(_SplatMap, vertexPosY, 0).r * 255.5;
+    slot.z = LOAD_TEXTURE2D_LOD(_SplatMap, vertexPosZ, 0).r * 255.5;
+    slot.w = LOAD_TEXTURE2D_LOD(_SplatMap, vertexPosW, 0).r * 255.5;
+
+    float4 baseMap;
+    float4 maskMap;
+    // _params[5] == 8 的时候是mip0
+    const float physicalMip = max(8 + _params[4] - _params[5], 0) * 0.1;
+    
+    SampleMaterialID(_BaseMapArray, _MaskMapArray, sampler_linear_repeat_aniso8, positionWS * 0.1, slot, physicalMip, weight, baseMap, maskMap);
+
+    _physicalPageBaseMapAtlas[uint3(dispatchThreadId.xy, _targetIndex)] = baseMap;
+    _physicalPageMaskMapAtlas[uint3(dispatchThreadId.xy, _targetIndex)] = maskMap;
+}
+
+void SampleMaterialID(TEXTURE2D_ARRAY(_BaseMapArray), TEXTURE2D_ARRAY(_MaskMapArray), SAMPLER(sampler_common),
+                  float2 uv, float4 slot, float mip, float4 weight, out float4 baseMap, out float4 maskMap)
+{
+    float4 baseMap0, baseMap1, baseMap2, baseMap3;
+    float4 maskMap0, maskMap1, maskMap2, maskMap3;
+    SampleMaterialIDTextureArrayLOD(_BaseMapArray, _MaskMapArray, sampler_common, uv, slot.x, mip, baseMap0, maskMap0);
+    SampleMaterialIDTextureArrayLOD(_BaseMapArray, _MaskMapArray, sampler_common, uv, slot.y, mip, baseMap1, maskMap1);
+    SampleMaterialIDTextureArrayLOD(_BaseMapArray, _MaskMapArray, sampler_common, uv, slot.z, mip, baseMap2, maskMap2);
+    SampleMaterialIDTextureArrayLOD(_BaseMapArray, _MaskMapArray, sampler_common, uv, slot.w, mip, baseMap3, maskMap3);
+    weight = CalculateBlendWeight(weight, abs(float4(baseMap0.a, baseMap1.a, baseMap2.a, baseMap3.a)) + HALF_EPS, 1);
+    baseMap = Blend(baseMap0, baseMap1, baseMap2, baseMap3, weight);
+    maskMap = Blend(maskMap0, maskMap1, maskMap2, maskMap3, weight);
+}
+
+void SampleMaterialIDTextureArrayLOD(TEXTURE2D_ARRAY(_BaseMapArray), TEXTURE2D_ARRAY(_MaskMapArray), SAMPLER(sampler_common),
+                                  float2 uv, float slot, float mip, out float4 baseMap, out float4 maskMap)
+{
+    baseMap = SAMPLE_TEXTURE2D_ARRAY_LOD(_BaseMapArray, sampler_common, uv, slot, mip);
+    maskMap = SAMPLE_TEXTURE2D_ARRAY_LOD(_MaskMapArray, sampler_common, uv, slot, mip);
+}
